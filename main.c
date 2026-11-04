@@ -109,6 +109,7 @@ void reconstruir_rota(int destino, const int anterior[], int rota[],
 int main(int argc, char *argv[])
 {
     char caminho[4096];
+    const char *caminho_arquivo;
     /* static evita colocar a matriz grande na pilha de execucao. */
     static int mapa[MAX_ESQUINAS + 1][MAX_ESQUINAS + 1];
     static long long tempo[MAX_ESQUINAS + 1];
@@ -127,8 +128,11 @@ int main(int argc, char *argv[])
         if (fgets(caminho, sizeof caminho, stdin) == NULL)
             return EXIT_FAILURE;
         caminho[strcspn(caminho, "\r\n")] = '\0';
+        caminho_arquivo = caminho;
+    } else {
+        caminho_arquivo = argv[1];
     }
-    if (!ler_mapa(argc == 2 ? argv[1] : caminho, &n, &destino, mapa))
+    if (!ler_mapa(caminho_arquivo, &n, &destino, mapa))
         return EXIT_FAILURE;
     rota_mais_rapida(n, mapa, tempo, anterior, finalizada);
     if (tempo[destino] == INFINITO) {
