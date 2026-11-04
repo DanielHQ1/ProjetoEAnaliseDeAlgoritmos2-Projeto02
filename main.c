@@ -12,10 +12,6 @@
 #define INFINITO LLONG_MAX
 #define MAX_ESQUINAS 1000
 
-/* Matriz: mapa[u][v] guarda o tempo da rua de u para v.
- * Zero significa ausencia de rua, pois os tempos sao positivos.
- * Os identificadores usados pelo enunciado e exemplo sao de 1 a n.
- */
 int ler_mapa(const char *caminho, int *n, int *destino, int mapa[][MAX_ESQUINAS + 1])
 {
     FILE *arquivo = fopen(caminho, "r");
@@ -44,7 +40,7 @@ int ler_mapa(const char *caminho, int *n, int *destino, int mapa[][MAX_ESQUINAS 
             origem < 1 || origem > *n || chegada < 1 || chegada > *n ||
             minutos <= 0)
             break;
-        /* Se houver ruas repetidas, conserva a mais rapida. */
+
         if (mapa[origem][chegada] == 0 || minutos < mapa[origem][chegada])
             mapa[origem][chegada] = minutos;
     }
@@ -56,10 +52,6 @@ int ler_mapa(const char *caminho, int *n, int *destino, int mapa[][MAX_ESQUINAS 
     return 1;
 }
 
-/* Segue o pseudocodigo do professor. O conjunto E e representado por
- * finalizada[e] == 0. Os resultados sao escritos nos vetores recebidos.
- * Tempo O(n^2). Memoria fixa: O(MAX_ESQUINAS^2).
- */
 void rota_mais_rapida(int n, int mapa[][MAX_ESQUINAS + 1], long long tempo[],
                       int anterior[], int finalizada[])
 {
@@ -75,7 +67,7 @@ void rota_mais_rapida(int n, int mapa[][MAX_ESQUINAS + 1], long long tempo[],
         for (e = 1; e <= n; e++)
             if (!finalizada[e] && (v == -1 || tempo[e] < tempo[v]))
                 v = e;
-        /* Nao ha caminho da origem para as esquinas restantes. */
+
         if (v == -1 || tempo[v] == INFINITO)
             break;
         finalizada[v] = 1;
@@ -91,7 +83,6 @@ void rota_mais_rapida(int n, int mapa[][MAX_ESQUINAS + 1], long long tempo[],
     }
 }
 
-/* Escreve a rota da origem ao destino no vetor recebido. */
 void reconstruir_rota(int destino, const int anterior[], int rota[],
                      int *tamanho)
 {
@@ -110,7 +101,7 @@ int main(int argc, char *argv[])
 {
     char caminho[4096];
     const char *caminho_arquivo;
-    /* static evita colocar a matriz grande na pilha de execucao. */
+
     static int mapa[MAX_ESQUINAS + 1][MAX_ESQUINAS + 1];
     static long long tempo[MAX_ESQUINAS + 1];
     static int anterior[MAX_ESQUINAS + 1];
