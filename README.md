@@ -39,7 +39,9 @@ Tempo calculado para rota = 7 min.
 - Selecao por varredura e relaxamento conforme o algoritmo fornecido.
 - Empates conservam o primeiro predecessor encontrado; a selecao de esquinas
   desempata pelo menor numero. Uma das rotas otimas e apresentada.
-- Tempos em `long long`. Complexidade O(n²) de tempo e memoria.
+- Arrays estaticos, sem alocacao dinamica. Limite de 1000 esquinas definido
+  por MAX_ESQUINAS em main.c. Entradas maiores sao rejeitadas.
+- Tempos em long long. Tempo O(n^2); memoria fixa O(MAX_ESQUINAS^2).
 
 ## Antes da entrega
 
