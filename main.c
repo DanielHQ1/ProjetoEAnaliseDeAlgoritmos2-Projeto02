@@ -7,43 +7,33 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
-#include <stdint.h>
 #include <string.h>
 
 #define INFINITO LLONG_MAX
+#define MAX_ESQUINAS 1000
 
-/* Matriz linear: a rua de u para v fica na posicao u * lado + v.
+/* Matriz: mapa[u][v] guarda o tempo da rua de u para v.
  * Zero significa ausencia de rua, pois os tempos sao positivos.
  * Os identificadores usados pelo enunciado e exemplo sao de 1 a n.
  */
-int ler_mapa(const char *caminho, int *n, int *destino, int **mapa)
+int ler_mapa(const char *caminho, int *n, int *destino, int mapa[][MAX_ESQUINAS + 1])
 {
     FILE *arquivo = fopen(caminho, "r");
-    size_t lado, quantidade, i;
+    int u, v;
     int origem, chegada, minutos, fim = 0;
     if (arquivo == NULL) {
         fprintf(stderr, "Erro: nao foi possivel abrir o arquivo.\n");
         return 0;
     }
-    if (fscanf(arquivo, "%d%d", destino, n) != 2 || *n < 1 ||
+    if (fscanf(arquivo, "%d%d", destino, n) != 2 || *n < 1 || *n > MAX_ESQUINAS ||
         *destino < 1 || *destino > *n) {
-        fprintf(stderr, "Erro: destino ou numero de esquinas invalido.\n");
+        fprintf(stderr, "Erro: destino invalido ou numero de esquinas fora do limite de 1 a %d.\n", MAX_ESQUINAS);
         fclose(arquivo);
         return 0;
     }
-    lado = (size_t)*n + 1;
-    if (lado > SIZE_MAX / lado || lado * lado > SIZE_MAX / sizeof(int)) {
-        fprintf(stderr, "Erro: mapa grande demais.\n");
-        fclose(arquivo);
-        return 0;
-    }
-    quantidade = lado * lado;
-    *mapa = calloc(quantidade, sizeof(int));
-    if (*mapa == NULL) {
-        fprintf(stderr, "Erro: memoria insuficiente para o mapa.\n");
-        fclose(arquivo);
-        return 0;
-    }
+    for (u = 1; u <= *n; u++)
+        for (v = 1; v <= *n; v++)
+            mapa[u][v] = 0;
     while (fscanf(arquivo, "%d", &origem) == 1) {
         if (origem == 0) {
             char extra;
@@ -54,16 +44,13 @@ int ler_mapa(const char *caminho, int *n, int *destino, int **mapa)
             origem < 1 || origem > *n || chegada < 1 || chegada > *n ||
             minutos <= 0)
             break;
-        i = (size_t)origem * lado + (size_t)chegada;
         /* Se houver ruas repetidas, conserva a mais rapida. */
-        if ((*mapa)[i] == 0 || minutos < (*mapa)[i])
-            (*mapa)[i] = minutos;
+        if (mapa[origem][chegada] == 0 || minutos < mapa[origem][chegada])
+            mapa[origem][chegada] = minutos;
     }
     fclose(arquivo);
     if (!fim) {
         fprintf(stderr, "Erro: ruas invalidas ou terminador 0 ausente.\n");
-        free(*mapa);
-        *mapa = NULL;
         return 0;
     }
     return 1;
@@ -71,13 +58,12 @@ int ler_mapa(const char *caminho, int *n, int *destino, int **mapa)
 
 /* Segue o pseudocodigo do professor. O conjunto E e representado por
  * finalizada[e] == 0. Os resultados sao escritos nos vetores recebidos.
- * Tempo O(n^2); mapa O(n^2); vetores auxiliares O(n).
+ * Tempo O(n^2). Memoria fixa: O(MAX_ESQUINAS^2).
  */
-void rota_mais_rapida(int n, const int mapa[], long long tempo[],
+void rota_mais_rapida(int n, int mapa[][MAX_ESQUINAS + 1], long long tempo[],
                       int anterior[], int finalizada[])
 {
     int e, v, passo;
-    size_t lado = (size_t)n + 1;
     for (e = 1; e <= n; e++) {
         tempo[e] = INFINITO;
         anterior[e] = -1;
@@ -94,7 +80,7 @@ void rota_mais_rapida(int n, const int mapa[], long long tempo[],
             break;
         finalizada[v] = 1;
         for (e = 1; e <= n; e++) {
-            int minutos = mapa[(size_t)v * lado + (size_t)e];
+            int minutos = mapa[v][e];
             if (!finalizada[e] && minutos > 0 &&
                 tempo[v] <= LLONG_MAX - minutos &&
                 tempo[e] > tempo[v] + minutos) {
@@ -123,10 +109,14 @@ void reconstruir_rota(int destino, const int anterior[], int rota[],
 int main(int argc, char *argv[])
 {
     char caminho[4096];
-    int n, destino, *mapa = NULL, *anterior, *finalizada, *rota;
+    /* static evita colocar a matriz grande na pilha de execucao. */
+    static int mapa[MAX_ESQUINAS + 1][MAX_ESQUINAS + 1];
+    static long long tempo[MAX_ESQUINAS + 1];
+    static int anterior[MAX_ESQUINAS + 1];
+    static int finalizada[MAX_ESQUINAS + 1];
+    static int rota[MAX_ESQUINAS + 1];
+    int n, destino;
     int tamanho, i;
-    long long *tempo;
-    size_t lado;
     if (argc > 2) {
         fprintf(stderr, "Uso: %s [caminho-do-arquivo.txt]\n", argv[0]);
         return EXIT_FAILURE;
@@ -138,18 +128,8 @@ int main(int argc, char *argv[])
             return EXIT_FAILURE;
         caminho[strcspn(caminho, "\r\n")] = '\0';
     }
-    if (!ler_mapa(argc == 2 ? argv[1] : caminho, &n, &destino, &mapa))
+    if (!ler_mapa(argc == 2 ? argv[1] : caminho, &n, &destino, mapa))
         return EXIT_FAILURE;
-    lado = (size_t)n + 1;
-    tempo = malloc(lado * sizeof *tempo);
-    anterior = malloc(lado * sizeof *anterior);
-    finalizada = malloc(lado * sizeof *finalizada);
-    rota = malloc(lado * sizeof *rota);
-    if (tempo == NULL || anterior == NULL || finalizada == NULL || rota == NULL) {
-        fprintf(stderr, "Erro: memoria insuficiente.\n");
-        free(mapa); free(tempo); free(anterior); free(finalizada); free(rota);
-        return EXIT_FAILURE;
-    }
     rota_mais_rapida(n, mapa, tempo, anterior, finalizada);
     if (tempo[destino] == INFINITO) {
         printf("Nao existe rota da esquina #1 ate a esquina #%d.\n", destino);
@@ -160,6 +140,5 @@ int main(int argc, char *argv[])
             printf(" %d", rota[i]);
         printf("\nTempo calculado para rota = %lld min.\n", tempo[destino]);
     }
-    free(mapa); free(tempo); free(anterior); free(finalizada); free(rota);
     return EXIT_SUCCESS;
 }
