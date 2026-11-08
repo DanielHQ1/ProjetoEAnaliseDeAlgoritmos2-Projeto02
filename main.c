@@ -12,7 +12,9 @@
 #define INFINITO LLONG_MAX
 #define MAX_ESQUINAS 1000
 
-int ler_mapa(const char *caminho, int *n, int *destino, int mapa[][MAX_ESQUINAS + 1])
+static int mapa[MAX_ESQUINAS][MAX_ESQUINAS];
+
+int ler_mapa(const char *caminho, int *n, int *destino, int mapa[][MAX_ESQUINAS])
 {
     FILE *arquivo = fopen(caminho, "r");
     int u, v;
@@ -27,8 +29,8 @@ int ler_mapa(const char *caminho, int *n, int *destino, int mapa[][MAX_ESQUINAS 
         fclose(arquivo);
         return 0;
     }
-    for (u = 1; u <= *n; u++)
-        for (v = 1; v <= *n; v++)
+    for (u = 0; u < *n; u++)
+        for (v = 0; v < *n; v++)
             mapa[u][v] = 0;
     while (fscanf(arquivo, "%d", &origem) == 1) {
         if (origem == 0) {
@@ -41,6 +43,8 @@ int ler_mapa(const char *caminho, int *n, int *destino, int mapa[][MAX_ESQUINAS 
             minutos <= 0)
             break;
 
+        origem--;
+        chegada--;
         if (mapa[origem][chegada] == 0 || minutos < mapa[origem][chegada])
             mapa[origem][chegada] = minutos;
     }
@@ -49,29 +53,30 @@ int ler_mapa(const char *caminho, int *n, int *destino, int mapa[][MAX_ESQUINAS 
         fprintf(stderr, "Erro: ruas invalidas ou terminador 0 ausente.\n");
         return 0;
     }
+    (*destino)--;
     return 1;
 }
 
-void rota_mais_rapida(int n, int mapa[][MAX_ESQUINAS + 1], long long tempo[],
+void rota_mais_rapida(int n, int mapa[][MAX_ESQUINAS], long long tempo[],
                       int anterior[], int finalizada[])
 {
     int e, v, passo;
-    for (e = 1; e <= n; e++) {
+    for (e = 0; e < n; e++) {
         tempo[e] = INFINITO;
         anterior[e] = -1;
         finalizada[e] = 0;
     }
-    tempo[1] = 0;
+    tempo[0] = 0;
     for (passo = 0; passo < n; passo++) {
         v = -1;
-        for (e = 1; e <= n; e++)
+        for (e = 0; e < n; e++)
             if (!finalizada[e] && (v == -1 || tempo[e] < tempo[v]))
                 v = e;
 
         if (v == -1 || tempo[v] == INFINITO)
             break;
         finalizada[v] = 1;
-        for (e = 1; e <= n; e++) {
+        for (e = 0; e < n; e++) {
             int minutos = mapa[v][e];
             if (!finalizada[e] && minutos > 0 &&
                 tempo[v] <= LLONG_MAX - minutos &&
@@ -102,11 +107,10 @@ int main(int argc, char *argv[])
     char caminho[4096];
     const char *caminho_arquivo;
 
-    static int mapa[MAX_ESQUINAS + 1][MAX_ESQUINAS + 1];
-    static long long tempo[MAX_ESQUINAS + 1];
-    static int anterior[MAX_ESQUINAS + 1];
-    static int finalizada[MAX_ESQUINAS + 1];
-    static int rota[MAX_ESQUINAS + 1];
+    long long tempo[MAX_ESQUINAS];
+    int anterior[MAX_ESQUINAS];
+    int finalizada[MAX_ESQUINAS];
+    int rota[MAX_ESQUINAS];
     int n, destino;
     int tamanho, i;
     if (argc > 2) {
@@ -127,12 +131,12 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     rota_mais_rapida(n, mapa, tempo, anterior, finalizada);
     if (tempo[destino] == INFINITO) {
-        printf("Nao existe rota da esquina #1 ate a esquina #%d.\n", destino);
+        printf("Nao existe rota da esquina #1 ate a esquina #%d.\n", destino + 1);
     } else {
         reconstruir_rota(destino, anterior, rota, &tamanho);
-        printf("Rota ate a esquina #%d:", destino);
+        printf("Rota ate a esquina #%d:", destino + 1);
         for (i = 0; i < tamanho; i++)
-            printf(" %d", rota[i]);
+            printf(" %d", rota[i] + 1);
         printf("\nTempo calculado para rota = %lld min.\n", tempo[destino]);
     }
     return EXIT_SUCCESS;
